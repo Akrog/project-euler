@@ -21,12 +21,15 @@ We can see that 28 is the first triangle number to have over five divisors.
 What is the value of the first triangle number to have over five hundred divisors?
 """
 
-print __doc__
+from common.primes import GetPrime
+import itertools as it
+import math
 
 import sys
-if (2,7) > sys.version_info or (3,0) <= sys.version_info:
+if (2, 7) > sys.version_info or (3, 0) <= sys.version_info:
     import warnings
     warnings.warn("Code intended for Python 2.7.x")
+
 
 def triangle_num():
     nth = 1
@@ -38,25 +41,82 @@ def triangle_num():
         n += 1
         nth += 1
 
+#
+# Initial solution: A little slow
+#
+# def firsttriangle(num_divisors):
+#    triangle = triangle_num()
+#
+#    count = 0
+#    # Looking at the pattern we see that the result always comes as related
+#    # pairs where given the [nth] element the [last-nth+1] = triangle / [nth]
+#    while count < num_divisors:
+#        n, nth = next(triangle)
+#        count = 0
+#
+#        ceil = n/2 + 1
+#        x = 1
+#        while x < ceil:
+#            if n%x == 0:
+#                ceil = n // x
+#                count += 2
+#            x += 1
+#
+#    return (n, nth)
+
+
+#
+# Better solution: At least 3 times faster
+# Although I still believe there should be a faster method.
 def firsttriangle(num_divisors):
+    get_prime = GetPrime()
     triangle = triangle_num()
 
     count = 0
-    # Looking at the pattern we see that the result always comes as related
-    # pairs where given the [nth] element the [last-nth+1] = triangle / [nth]
+
+    # While we haven't reached the number of divisors we want
     while count < num_divisors:
+        # Get the next triangle and initialize the prime number generator
         n, nth = next(triangle)
+        it_prime = iter(get_prime)
+
         count = 0
 
-        ceil = n/2 + 1
-        x = 1
-        while x < ceil:
-            if n%x == 0:
-                ceil = n // x
-                count += 2
-            x += 1
+        ceil = math.sqrt(n)
+        prime = 1
+
+        # Initially we only have basic divisors
+        obtained = []
+        divisors = [n, 1]
+
+        # We'll only try to get divisors up to the ceil
+        while prime < ceil:
+            # Only use prime numbers as divisors
+            prime = next(it_prime)
+
+            # If triangle is divisible by the prime number
+            if n % prime == 0:
+                # We have  a new valid prime divisor and an additional non
+                # primal divisor
+                divisors.append(prime)
+                obt = n/prime
+                obtained.append(obt)
+
+                # Updtate the ceil
+                ceil = math.sqrt(obt)
+
+                # For every already obtained non prime divisor we check if it
+                # is divisible by this new prime and therefore can give us new
+                # divisors.
+                for x in obtained:
+                    if x % prime == 0:
+                        obtained.append(x/prime)
+
+        s = set(it.chain(obtained, divisors))
+        count = len(s)
 
     return (n, nth)
+
 
 print "\n", __doc__
 num_divisors = 500
